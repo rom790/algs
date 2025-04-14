@@ -1,0 +1,10 @@
+digraph Trie {
+  node [shape=circle];
+  0 -> 1 [label="T"];
+  1 -> 2 [label="A"];
+  2 -> 3 [label="G"];
+  3 -> 4 [label="T"];
+  1 -> 0 [style=dashed, color=blue, label="suff"];
+  2 -> 0 [style=dashed, color=blue, label="suff"];
+  3 -> 0 [style=dashed, color=blue, label="suff"];
+}

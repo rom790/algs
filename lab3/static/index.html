@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Визуализация Ахо-Корасик</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <style>
+        #graph {
+            width: 100%;
+            height: 540px;
+            /* display: flex; */
+            border: 1px solid #ccc;
+        }
+        .container{
+            display: flex;
+        }
+        .controls {
+            padding: 10px 10px 0px 10px;
+            display: flex;
+            /* justify-content: ; */
+            gap: 15px;
+            flex-wrap: wrap;
+            /* align-items: center; */
+        }
+        h1 {
+            font-size: 21px;
+            padding: 0px 10px;
+            margin: 0px;
+            font-family: 'Lucida Sans Unicode';
+            font-weight: 500;
+        }
+
+        button {
+            align-items: center;
+            appearance: none;
+            background-color: #FCFCFD;
+            border-radius: 4px;
+            border-width: 0;
+            box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,rgba(45, 35, 66, 0.3) 0 7px 13px -3px,#D6D6E7 0 -3px 0 inset;
+            box-sizing: border-box;
+            color: #36395A;
+            cursor: pointer;
+            display: inline-flex;
+            font-family: "JetBrains Mono",monospace;
+            height: 30px;
+            justify-content: center;
+            line-height: 1;
+            list-style: none;
+            overflow: hidden;
+            padding-left: 12px;
+            padding-right: 12px;
+            position: relative;
+            text-align: left;
+            text-decoration: none;
+            transition: box-shadow .15s,transform .15s;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            white-space: nowrap;
+            will-change: box-shadow,transform;
+            font-size: 14px;
+        }
+
+        button:focus {
+        box-shadow: #D6D6E7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+        }
+
+        button:hover {
+        box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+        transform: translateY(-2px);
+        }
+
+        button:active {
+        box-shadow: #D6D6E7 0 3px 7px inset;
+        transform: translateY(2px);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+            background-color: #e9ecef;
+            color: #6c757d;
+            border-color: #dee2e6;
+        }
+        button:disabled:hover {
+            background-color: #e9ecef !important;
+            color: #6c757d !important;
+            border-color: #dee2e6 !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+        #stepCounter, #searchStepCounter {
+            /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
+            font-size: 16px;
+            text-align: center;
+            font-family: 'Trebuchet MS', Helvetica, sans-serif;
+            color: #36395A;
+            /* border-radius: 10px;
+            border-width: 0; */
+            border: 2px solid;
+            border-radius: 20px;
+            align-content: center;
+            padding: 0px 20px;
+            height: 35px;
+
+        }
+        .toggle-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .toggle-btn {
+            user-select: none;
+            font-family: 'Trebuchet MS', Helvetica, sans-serif;
+            position: relative;
+            padding: 8px 16px 8px 32px;
+            background: none;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #d33b3b;
+            font-weight: 500;
+            font-size: 14px;
+            border: 2px solid rgba(43, 124, 233, 0.3);
+        }
+
+        /* Иконки (псевдоэлементы) */
+        .toggle-btn::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            width: 14px;
+            height: 14px;
+            transform: translateY(-50%);
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: opacity 0.2s ease;
+        }
+
+        /* Галочка для активного состояния */
+        .toggle-btn.active::before {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232B7CE9'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z'/%3E%3C/svg%3E");
+        }
+
+        /* Крестик для неактивного состояния */
+        .toggle-btn:not(.active)::before {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23adb5bd'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z'/%3E%3C/svg%3E");
+            opacity: 0.6;
+        }
+
+        /* Состояния */
+        .toggle-btn:hover {
+            background: rgba(43, 124, 233, 0.1);
+        }
+
+        .toggle-btn.active {
+            color: #1edc5d;
+            background: rgba(43, 124, 233, 0.08);
+        }
+
+        .toggle-btn:active {
+            transform: scale(0.98);
+        }
+
+        .search-controls {
+            display: flex;
+            gap: 15px;
+            padding: 10px 10px 0px 10px;
+            flex-wrap: wrap;
+            position: relative;
+            font-family: "JetBrains Mono",monospace;
+            /* align-items: center; */
+        }
+
+        .search-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 16px;
+            padding: 10px;
+            font-family: "JetBrains Mono",monospace;
+        }
+        .search-header {
+            display: flex;
+            align-items:center;
+            gap: 20px;
+        }
+
+        #currentSymbol, #foundPatternInfo {
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            min-width: 200px;
+        }
+        .warning-message {
+            color: #dc3545;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #dc3545;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            position: absolute;
+            top: 50%;
+            z-index: 1;
+            display: block;
+            width: 90%;
+            text-align: center;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .search-visualization {
+            font-family: monospace;
+            font-size: 18px;
+            line-height: 1.5;
+        }
+
+        #searchTextDisplay {
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            white-space: pre-wrap;
+        }
+
+        .current-char {
+            background-color: #FFD700;
+            font-weight: bold;
+            position: relative;
+            z-index: 3;
+            animation: pulse 1s infinite;
+        }
+
+        /* Текущая подстрока в боре */
+        .current-substring {
+            background-color: #feef61;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Найденные паттерны */
+        .matched-pattern {
+            background-color: #44a8fa;
+            color: white;
+            z-index: 1;
+        }
+
+        /* Визуализация пути в боре */
+        .state-node {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 0 2px;
+            background: #e0e0e0;
+            border-radius: 3px;
+        }
+
+        .state-node:first-child {
+            background: #4CAF50;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .thread-controls {
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+        }
+
+        .thread-selector {
+            padding: 5px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+            margin-right: 10px;
+        }
+
+        .thread-info {
+            font-size: 14px;
+            color: #495057;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div class="trie">
+
+            <h1>Визуализация дерева Бора</h1>
+
+            <div class="controls">
+                <button type="button" id="prevBtn">← Назад</button>
+                <button type="button" id="nextBtn">Вперед →</button>
+                <button type="button" id="playBtn">▶ Воспроизвести</button>
+                <button type="button" id="stopBtn" disabled>■ Стоп</button>
+                <button type="button" id="resetBtn">↻ Сброс</button>
+                <span id="stepCounter">Шаг 0 из 0</span>
+            </div>
+            <div class="toggle-container">
+                <div class="toggle-btn active" id="toggleSuffix">Суффиксные ссылки</div>
+                <div class="toggle-btn active" id="toggleAutomaton">Переходы автомата</div>
+            </div>
+        </div>
+        <!-- <div class="search-section"> -->
+        <div class="search">
+            <div class="search-header">
+                <h1>Визуализация поиска</h1>
+            </div>
+            <div class="search-controls">
+                <p id="searchWarning" class="warning-message" style="display: none;">
+                    Для запуска поиска необходимо полностью построить бор
+                </p>
+                <button type="button" id="prevSearchBtn">← Назад</button>
+                <button type="button" id="nextSearchBtn">Вперед →</button>
+                <button type="button" id="playSearchBtn">▶ Воспроизвести</button>
+                <button type="button" id="stopSearchBtn" disabled>■ Стоп</button>
+                <button type="button" id="resetSearchBtn">↻ Сброс</button>
+                <span id="searchStepCounter">Поиск: 0/0</span>
+            </div>
+            <div class="search-info">
+                <div id="currentSymbol">Текущий символ: -</div>
+                <div id="foundPatternInfo">Найдено: -</div>
+                <div class="thread-controls">
+                    <select id="threadSelector" class="thread-selector"></select>
+                    <span id="threadInfo" class="thread-info"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="search-visualization">
+        <div id="searchTextDisplay"></div>
+    </div>
+    <div id="graph"></div>
+
+    <script>
+        const statePathCache = new Map();
+        let parallelSearchData = null;
+        let currentThreadIndex = 0;
+
+        // Функция для получения полного пути до состояния
+        function getPathToState(state, trieData) {
+            if (statePathCache.has(state)) {
+                return statePathCache.get(state);
+            }
+
+            const path = [];
+            let current = state;
+            
+            // Идем от состояния к корню (0)
+            while (current !== 0) {
+                path.unshift(current); // Добавляем в начало
+                current = trieData[current].par;
+            }
+            
+            path.unshift(0); // Добавляем корень
+            statePathCache.set(state, path);
+            
+            return path;
+        }
+
+        // Получаем текущую подстроку для шага
+        function getCurrentSubstring(stepIndex, trieData, searchSteps) {
+            const step = searchSteps[stepIndex];
+            const path = getPathToState(step.next_state, trieData);
+            return {
+                start: stepIndex - path.length + 1,
+                length: path.length,
+                path: path
+            };
+        }
+        const displaySettings = {
+            showSuffixLinks: true,
+            showAutomatonTransitions: true
+        };
+        // Обновляет состояние окна, отображающего исследуемый текст
+        function updateSearchDisplay(text, currentPos, currentState, trieData, patterns) {
+            const display = document.getElementById('searchTextDisplay');
+            let html = '';
+            
+            // Получаем путь от корня до текущего состояния
+            const path = getPathToState(currentState, trieData);
+            const substringLength = path.length - 1; // Длина без учета корня
+            
+            for (let i = 0; i < text.length; i++) {
+                let char = text[i];
+                const classes = [];
+                
+                // 1. Текущий символ (максимальный приоритет)
+                if (i === currentPos) {
+                    classes.push('current-char');
+                }
+                
+                // 2. Текущая подстрока в боре
+                if (substringLength > 0 && 
+                    i >= currentPos - substringLength + 1 && 
+                    i <= currentPos) {
+                    classes.push('current-substring');
+                }
+                
+                // 3. Найденные паттерны (только если не пересекаются с текущим символом)
+                // if (!classes.includes('current-char')) {
+                    patterns.forEach(p => {
+                        
+                        if (i >= p.start && i < p.start + p.text.length) {
+                            classes.push('matched-pattern');
+                        }
+                    });
+                // }
+                
+                html += `<span class="${classes.join(' ')}">${char}</span>`;
+            }
+            
+            display.innerHTML = html;
+
+        }
+        // ищет наибольшую длинну среди найдённых паттернов
+        function getMaxFragmentLength(str) {
+            if (typeof str !== 'string') {
+                throw new Error('Input must be a string');
+            }
+
+            const fragments = str.split(',');
+            
+            if (fragments.length === 0) {
+                return 0; // если строка пустая
+            }
+
+            let maxLength = 0;
+            for (const fragment of fragments) {
+                if (fragment.length > maxLength) {
+                maxLength = fragment.length;
+                }
+            }
+
+            return maxLength;
+        }
+       // Функция визуализации текущего шага поиска
+        function visualizeCurrentSearchStep() {
+            if (!parallelSearchData || 
+                !parallelSearchData.threads[currentThreadIndex] || 
+                currentSearchStep >= parallelSearchData.threads[currentThreadIndex].steps.length) {
+                return;
+            }
+            
+            const currentThread = parallelSearchData.threads[currentThreadIndex];
+            const step = currentThread.steps[currentSearchStep];
+            const trieData = trieVerticesHistory[trieVerticesHistory.length - 1];
+            
+            updateSearchDisplay(
+                currentThread.search_text,
+                currentSearchStep,
+                step.next_state,
+                trieData,
+                step.found_pattern ? [{
+                    text: step.found_pattern,
+                    start: currentSearchStep - getMaxFragmentLength(step.found_pattern) + 1
+                }] : []
+            );
+            
+            // Обновляем информацию
+            document.getElementById('currentSymbol').textContent = 
+                `Текущий символ: ${String.fromCharCode(step.symbol)}`;
+            
+            document.getElementById('foundPatternInfo').textContent = 
+                step.found_pattern ? `Найдено: ${step.found_pattern}` : 'Найдено: -';
+            
+            document.getElementById('searchStepCounter').textContent = 
+                `Поиск: ${currentSearchStep + 1} из ${currentThread.steps.length}`;
+            
+            // Сбрасываем предыдущие подсветки
+            resetSearchHighlights();
+            
+            // Подсвечиваем текущее состояние
+            nodes.update([{
+                id: step.current_state,
+                color: '#FFD700', // Золотой
+                font: { color: '#000' },
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(255, 215, 0, 0.6)',
+                    size: 10,
+                    x: 0,
+                    y: 0
+                }
+            }]);
+            
+            // Подсвечиваем переход
+            const edge = edges.get().find(e => 
+                e.from === step.current_state && 
+                e.to === step.next_state && 
+                e.label === String.fromCharCode(step.symbol));
+            
+            if (edge) {
+                edges.update([{
+                    id: edge.id,
+                    color: "#FF4500", // Оранжево-красный
+                    width: 3,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(255, 69, 0, 0.5)',
+                        size: 5,
+                        x: 0,
+                        y: 0
+                    }
+                }]);
+            }
+            
+            // Подсвечиваем следующее состояние
+            nodes.update([{
+                id: step.next_state,
+                color: '#2dd22d', // Светло-зеленый
+                font: { color: '#000' }
+            }]);
+            
+            // Если найден паттерн, подсвечиваем терминальный узел
+            if (step.found_pattern) {
+                const terminalNode = nodes.get().find(n => 
+                    n.label.includes(step.found_pattern));
+                
+                if (terminalNode) {
+                    nodes.update([{
+                        id: terminalNode.id,
+                        color: '#FF6347', // Томатный
+                        font: { color: '#000' },
+                        shadow: {
+                            enabled: true,
+                            color: 'rgba(255, 99, 71, 0.5)',
+                            size: 10,
+                            x: 0,
+                            y: 0
+                        }
+                    }]);
+                }
+            }
+        }
+        
+        // Функция сброса подсветок поиска
+        function resetSearchHighlights() {
+            const nodeUpdates = nodes.get().map(node => ({
+                id: node.id,
+                color: node.flag ? NODE_COLOR.terminal : NODE_COLOR.normal,
+                font: { color: '#333' },
+                shadow: { enabled: false }
+            }));
+            
+            nodes.update(nodeUpdates);
+            
+            const edgeUpdates = edges.get().map(edge => ({
+                id: edge.id,
+                color: edge.color || EDGE_COLOR,
+                width: 1,
+                shadow: { enabled: false }
+            }));
+            
+            edges.update(edgeUpdates);
+        }
+
+        // Функция для обновления отображения графа
+        function updateGraphDisplay() {
+            if (!network) return;
+            
+            // Получаем все ребра
+            const allEdges = edges.get();
+            
+            // Обновляем видимость ребер в зависимости от настроек
+            const updatedEdges = allEdges.map(edge => {
+                if (edge.label === 'suff' || edge.label === 'flink') {
+                    return {
+                        id: edge.id,
+                        hidden: !displaySettings.showSuffixLinks
+                    };
+                }
+                // if (edge.dashes && edge.color === 'green') {
+                if (edge.type == "automaton") {
+                    return {
+                        id: edge.id,
+                        hidden: !displaySettings.showAutomatonTransitions
+                    };
+                }
+                return { id: edge.id };
+            });
+            
+            edges.update(updatedEdges);
+        }
+        // Преобразует индекс символа в алфавите в соответствующий сивол
+        function indexToChar(index) {
+            const charMap = ['A', 'C', 'G', 'T', 'N'];
+            if (index >= 0 && index < charMap.length) {
+                return charMap[index];
+            } else {
+                console.error("Недопустимый индекс:", index);
+                throw new Error("Индекс должен быть от 0 до 4");
+            }
+        }
+        // Константы для стилей графа
+        const NODE_COLOR = {
+            normal: '#97C2FC',
+            terminal: '#FFA07A'
+        };
+        const EDGE_COLOR = '#2B7CE9';
+
+        // DOM элементы управления
+        const container = document.getElementById('graph');
+        const playBtn = document.getElementById('playBtn')
+        const stopBtn = document.getElementById('stopBtn')
+        const resetBtn = document.getElementById('resetBtn')
+        const prevBtn = document.getElementById('prevBtn')
+        const nextBtn = document.getElementById('nextBtn')
+        const prevSearchBtn = document.getElementById('prevSearchBtn')
+        const nextSearchBtn = document.getElementById('nextSearchBtn')
+        const playSearchBtn = document.getElementById('playSearchBtn')
+        const stopSearchBtn = document.getElementById('stopSearchBtn')
+        const resetSearchBtn = document.getElementById('resetSearchBtn')
+
+        // переменные для промежуточных данных и отслеживания состояний
+        let searchData = null;
+        let currentSearchStep = 0;
+        let isSearchPlaying = false;
+        let searchInterval = null;
+
+        // Инициализация графа
+        const options = {
+            nodes: {
+                shape: 'box',
+                font: {
+                    // size: 14,
+                    align: 'center',
+                },
+                // alignment: 'center',
+                margin: 10,
+            },
+            edges: {
+                arrows: 'to',
+                smooth: {
+                    type: 'cubicBezier'
+                },
+                font: {
+                    size: 12,
+                    align: 'top'
+                }
+            },
+            layout: {
+                hierarchical: {
+                    nodeSpacing: 200,
+                    // direction: 'DU',
+                    // sortMethod: 'directed'
+                }
+            },
+            physics: false,
+        };
+        // переменные для хранения основых данных
+        let network = null;
+        let currentBohrStep = 0;
+        let trieVerticesHistory = [];
+        let nodes = new vis.DataSet();
+        let edges = new vis.DataSet();
+
+        // Функция для преобразования данных из Go в формат для vis.js
+        function processBohrData(trieVertices, previousVertices = []) {
+            const newNodes = [];
+            const newEdges = [];
+            const levels = {};
+
+            // Сначала вычисляем уровни всех вершин
+            const calculateLevels = (vertexId, currentLevel) => {
+                if (levels[vertexId] !== undefined) return;
+                levels[vertexId] = currentLevel;
+                const vertex = trieVertices[vertexId];
+                if (vertex === undefined) return;
+                for (let i = 0; i < vertex.next_vrtx.length; i++) {
+                    if (vertex.next_vrtx[i] > 0) {
+                        calculateLevels(vertex.next_vrtx[i], currentLevel + 1);
+                    }
+                }
+            };
+
+            calculateLevels(0, 0); // Начинаем с корня (level=0)
+
+            const lastVertexId = trieVertices.length - 1;
+    
+            // Определяем новые вершины (для сравнения с предыдущим состоянием)
+            const newVertexIds = [];
+            for (let i = 0; i < trieVertices.length; i++) {
+                if (i >= previousVertices.length) {
+                    newVertexIds.push(i);
+                }
+            }
+
+            for (let i = 0; i < trieVertices.length; i++) {
+                const vertex = trieVertices[i];
+                const isNew = newVertexIds.includes(i);
+                const isLast = (i === lastVertexId);
+                    
+                const nodeStyle = {
+                    id: i,
+                    label: `${i}\n${vertex.flag ? `[${vertex.pat_num}]` : ''}`,
+                    level: levels[i],
+                    shape: 'box',
+                    shapeProperties: {
+                        borderDashes: vertex.flag ? [5, 5] : false
+                    },
+                    font: {
+                        align: 'center',
+                        size: isLast ? 16 : 14, // Увеличиваем шрифт для последней вершины
+                        color: isLast ? '#000000' : '#333333'
+                    }
+                };
+
+                // Цвета в зависимости от типа вершины и состояния
+                if (isLast) {
+                    // Особый стиль для последней вершины
+                    nodeStyle.color = {
+                        background: '#32CD32', // Ярко-зеленый
+                        border: '#228B22',
+                        highlight: {
+                            background: '#32CD32',
+                            border: '#228B22'
+                        },
+                        hover: {
+                            background: '#32CD32',
+                            border: '#228B22'
+                        }
+                    };
+                    nodeStyle.shadow = {
+                        enabled: true,
+                        color: 'rgba(50, 205, 50, 0.7)',
+                        size: 15,
+                        x: 0,
+                        y: 0
+                    };
+                } else if (vertex.flag) {
+                    // Терминальная вершина
+                    nodeStyle.color = NODE_COLOR.terminal;
+                } else {
+                    // Обычная вершина
+                    nodeStyle.color = NODE_COLOR.normal;
+                }
+
+                newNodes.push(nodeStyle);
+
+
+                // Добавляем суффиксные ссылки пунктиром
+                if (vertex.suff_link !== -1) {
+                    newEdges.push({
+                        from: i,
+                        to: vertex.suff_link,
+                        color: {color: EDGE_COLOR, highlight: EDGE_COLOR},
+                        dashes: true,
+                        arrows: 'to',
+                        label: 'suff',
+                        smooth: {type: "curvedCW", roundness: 0.3},
+                        priority: 0,
+                        type: 'suffix',
+                    });
+                }
+
+                // Добавляем суффиксные ссылки на терминальные вершины
+                if (vertex.suff_flink !== -1 && vertex.suff_flink !== 0) {
+                    newEdges.push({
+                        from: i,
+                        to: vertex.suff_flink,
+                        color: '#F66',
+                        // color: '#888',
+                        dashes: [5, 3],
+                        arrows: 'to',
+                        label: 'flink',
+                        smooth: {type: "curvedCW", roundness: 0.3},
+                        priority: 0,
+                        type: 'suffix',
+                    });
+                }
+                                // Добавляем ребро к родителю (если это не корень)
+                if (i !== 0 && vertex.par !== -1) {
+                    newEdges.push({
+                        from: vertex.par,
+                        to: i,
+                        label: String.fromCharCode(vertex.parr),
+                        color: EDGE_COLOR,
+                        smooth: {type: "straight"},
+                        font: { size: 18 },
+                        priority: 10,
+                        width: 3,
+                        type: 'regular',
+                    });
+                }
+                for (let c = 0; c < vertex.auto_move.length; c++) {
+                    if (vertex.auto_move[c] > 0) {
+                        newEdges.push({
+                            from: i,
+                            to: vertex.auto_move[c],
+                            label: indexToChar(c),
+                            color: {
+                                color: "#d33b3b",
+                                highlight: "#d33b3b",
+                                // ,
+                            }, // Зелёный цвет
+                            dashes: [5, 5],    // Пунктир
+                            width: 1,          // Тонкая линия
+                            arrows: 'to',
+                            smooth: {          // Плавный изгиб
+                                type: 'curvedCW', 
+                                roundness: 0.4
+                            },
+                            type: 'automaton',
+                        });
+                    }
+                }
+            }
+
+            return { nodes: newNodes, edges: newEdges };
+        }
+        // получает данные с сервера на go и преобразует их из json
+        async function loadVisualizationData() {
+            try {
+                // 1. Загружаем данные построения бора
+                console.log('Загрузка данных построения бора...');
+                const trieResponse = await fetch('/trie-data');
+                if (!trieResponse.ok) throw new Error('Ошибка загрузки данных бора');
+                
+                const trieData = await trieResponse.json();
+                console.log('Данные бора получены:', trieData);
+                
+                trieVerticesHistory = trieData.steps;
+                currentBohrStep = trieVerticesHistory.length - 1; // Используем последний шаг
+                
+                // Применяем последнее состояние бора
+                applyBohrStep(currentBohrStep);
+                
+                // 2. Загружаем данные поиска (если нужно)
+                console.log('Загрузка данных поиска...');
+                const searchResponse = await fetch('/search-data');
+                if (!searchResponse.ok) throw new Error('Ошибка загрузки данных поиска');
+                
+                const data = await searchResponse.json();
+                
+                // Определяем тип данных (параллельный или обычный поиск)
+                if (data.threads) {
+                    // Параллельный поиск
+                    parallelSearchData = data;
+                    currentThreadIndex = 0;
+                    initThreadSelector();
+                    visualizeCurrentThread();
+                } else {
+                    // Обычный поиск (для обратной совместимости)
+                    parallelSearchData = {
+                        threads: [{
+                            Steps: data.steps || [],
+                            SearchText: data.search_text || ""
+                        }]
+                    };
+                    currentThreadIndex = 0;
+                    visualizeCurrentThread();
+                }
+                
+            } catch (error) {
+                console.error('Ошибка загрузки данных визуализации:', error);
+                // Можно добавить отображение ошибки в интерфейсе
+                alert('Ошибка загрузки данных: ' + error.message);
+            }
+        }
+        // передаче данных о количестве потоков селектору потоков
+        function initThreadSelector() {
+            const threadControls = document.querySelector('.thread-controls');
+            const selector = document.getElementById('threadSelector');
+            
+            // Скрываем блок, если поток один
+            if (parallelSearchData.threads.length <= 1) {
+                threadControls.style.display = 'none';
+                return;
+            }
+            selector.innerHTML = '';
+            
+            parallelSearchData.threads.forEach((thread, i) => {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Поток ${i+1}`;
+                selector.appendChild(option);
+            });
+            
+            selector.onchange = (e) => {
+                currentThreadIndex = parseInt(e.target.value);
+                resetSearchVisualization();
+                visualizeCurrentThread();
+            };
+        }
+        // заполняет переменные значениями, соответствующими выбранному потоку
+        function visualizeCurrentThread() {
+            if (!parallelSearchData || !parallelSearchData.threads[currentThreadIndex]) return;
+            
+            const currentThread = parallelSearchData.threads[currentThreadIndex];
+            searchData = {
+                steps: currentThread.Steps,
+                search_text: currentThread.SearchText
+            };
+            
+            currentSearchStep = 0;
+            updateSearchControls();
+            visualizeCurrentSearchStep();
+            
+            // Обновляем информацию о потоке
+            document.getElementById('threadInfo').textContent = 
+                `Поток ${currentThreadIndex + 1}/${parallelSearchData.threads.length}`;
+        }
+        // Функция применения конкретного шага в боре
+        function applyBohrStep(stepIndex) {
+            if (stepIndex < 0 || stepIndex >= trieVerticesHistory.length) return;
+            const { nodes: processedNodes, edges: processedEdges } = processBohrData(trieVerticesHistory[stepIndex]);
+            
+            nodes.clear();
+            nodes.add(processedNodes);
+            
+            edges.clear();
+            edges.add(processedEdges);
+            
+
+            updateGraphDisplay();
+
+            // Обновляем статус
+            updateStepCounter();
+            updateSearchControls();
+        }
+
+        // Проверяем, что бор полностью построен (текущий шаг = последний)
+        function canRunSearch() {
+            return currentBohrStep === trieVerticesHistory.length - 1;
+        }
+        // изменяет состояние переключателей для управления процессом поиска
+        function updateSearchControls() {
+            const canSearch = canRunSearch();
+            const warningElement = document.getElementById('searchWarning');
+            
+            if (canSearch) {
+                warningElement.style.display = 'none';
+            } else {
+                warningElement.style.display = 'block';
+            }
+            
+            document.getElementById('playSearchBtn').disabled = !canSearch;
+            document.getElementById('prevSearchBtn').disabled = !canSearch;
+            document.getElementById('nextSearchBtn').disabled = !canSearch;
+            document.getElementById('resetSearchBtn').disabled = !canSearch;
+        }
+
+        // Функции управления шагами построения бора
+        function nextStep() {
+            if (currentBohrStep < trieVerticesHistory.length - 1) {
+                currentBohrStep++;
+                applyBohrStep(currentBohrStep);
+                // await applyBohrStepWithAnimation(currentBohrStep);
+            }
+        }
+        // переход на предыущий шаг построения бора
+        function prevStep() {
+            if (currentBohrStep > 0) {
+                currentBohrStep--;
+                applyBohrStep(currentBohrStep);
+            }
+        }
+        // сброс текущего шага простроения бора до первого
+        function resetSteps() {
+            currentBohrStep = 0;
+            applyBohrStep(currentBohrStep);
+        }
+        // переменные для управления процессом воспроизведения построения бора
+        let isPlaying = false;
+        let playPromise = null;
+        let playResolve = null;
+
+        // Функция воспроизведения процесса построения
+        async function playAllSteps() {
+            if (isPlaying) return;
+            
+            isPlaying = true;
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            
+            for (let i = currentBohrStep; i < trieVerticesHistory.length; i++) {
+                if (!isPlaying) break;
+                
+                currentBohrStep = i;
+                await applyBohrStep(i);
+                
+                // Создаем промис для возможности прерывания
+                playPromise = new Promise(resolve => { playResolve = resolve });
+                const delayPromise = new Promise(resolve => setTimeout(resolve, 500));
+                
+                if (i < trieVerticesHistory.length - 1) {
+                    await Promise.race([delayPromise, playPromise]);
+                }
+            }
+            
+            stopPlaying();
+        }
+
+        // Функция остановки
+        function stopPlaying() {
+            isPlaying = false;
+            if (playResolve) playResolve();
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+        
+        // обновляет счётчик шага построения бора
+        function updateStepCounter() {
+            document.getElementById('stepCounter').textContent = 
+                `Шаг ${currentBohrStep + 1} из ${trieVerticesHistory.length}`;
+        }
+
+        // Функции управления поиском
+        function nextSearchStep() {
+            if (!canRunSearch()) return;
+            const currentThread = parallelSearchData.threads[currentThreadIndex];
+
+            if (searchData && currentSearchStep < currentThread.steps.length - 1) {
+                currentSearchStep++;
+                visualizeCurrentSearchStep();
+            }
+        }
+        // переход на предыдущий шаг поиска 
+        function prevSearchStep() {
+            if (!canRunSearch()) return;
+            if (searchData && currentSearchStep > 0) {
+                currentSearchStep--;
+                visualizeCurrentSearchStep();
+            }
+        }
+        // воспроизведение процесса поиска 
+        function playSearch() {
+            if (!canRunSearch()) {
+                alert("Завершите построение бора перед запуском поиска");
+                return;
+            }
+            if (isSearchPlaying || !searchData) return;
+            
+            isSearchPlaying = true;
+            document.getElementById('playSearchBtn').disabled = true;
+            document.getElementById('stopSearchBtn').disabled = false;
+            
+            const currentThread = parallelSearchData.threads[currentThreadIndex];
+            searchInterval = setInterval(() => {
+                if (currentSearchStep < currentThread.steps.length - 1) {
+                    nextSearchStep();
+                } else {
+                    stopSearch();
+                }
+            }, 500);
+        }
+        // остановка процесса поиска
+        function stopSearch() {
+            isSearchPlaying = false;
+            clearInterval(searchInterval);
+            document.getElementById('playSearchBtn').disabled = false;
+            document.getElementById('stopSearchBtn').disabled = true;
+        }
+        // сброс текущего шага поиска до первого
+        function resetSearchVisualization() {
+            // Сброс состояния
+            currentSearchStep = 0;
+            
+            // Остановка воспроизведения, если активно
+            if (isSearchPlaying) {
+                stopSearch();
+            }
+            
+            // Сброс подсветки
+            resetSearchHighlights();
+            
+            if (parallelSearchData && parallelSearchData.threads[currentThreadIndex]) {
+                visualizeCurrentThread();
+            } else {
+                document.getElementById('searchTextDisplay').innerHTML = '';
+                document.getElementById('currentSymbol').textContent = '-';
+                document.getElementById('foundPatternInfo').textContent = '-';
+            }
+        }
+        
+        
+        // Инициализация
+        network = new vis.Network(container, { nodes, edges }, options);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVisualizationData();
+            updateSearchControls();
+        });
+
+        // добавление прослушивателей событий на элементы страницы 
+        prevBtn.addEventListener('click', prevStep);
+        nextBtn.addEventListener('click', nextStep);
+        resetBtn.addEventListener('click', resetSteps);
+        stopBtn.addEventListener('click', stopPlaying);
+        playBtn.addEventListener('click', playAllSteps);
+                // Обработчики для переключателей
+        document.getElementById('toggleSuffix').addEventListener('click', function() {
+            this.classList.toggle('active');
+            displaySettings.showSuffixLinks = !displaySettings.showSuffixLinks;
+            updateGraphDisplay();
+        });
+        
+        document.getElementById('toggleAutomaton').addEventListener('click', function() {
+            this.classList.toggle('active');
+            displaySettings.showAutomatonTransitions = !displaySettings.showAutomatonTransitions;
+            updateGraphDisplay();
+        });
+        prevSearchBtn.addEventListener('click', prevSearchStep);
+        nextSearchBtn.addEventListener('click', nextSearchStep);
+        playSearchBtn.addEventListener('click', playSearch);
+        stopSearchBtn.addEventListener('click', stopSearch);
+        resetSearchBtn.addEventListener('click', resetSearchVisualization);
+    </script>
+</body>
+</html>
+
